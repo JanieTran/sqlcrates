@@ -1,0 +1,22 @@
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Environment secrets (contains OpenRouter API key)
+.env
+
+# Package build artifacts
+dist/
+*.egg-info/
+
+# Test cache
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Data files
+*.csv
+plan.md
+data_card.md
