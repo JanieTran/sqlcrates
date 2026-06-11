@@ -1,8 +1,6 @@
 from __future__ import annotations
-
 from enum import Enum
 from typing import Any
-
 from pydantic import BaseModel, Field
 
 
@@ -18,7 +16,6 @@ class ColumnRole(str, Enum):
     DATETIME = "datetime"        # timestamp or date
     BOOLEAN = "boolean"          # true/false or 0/1
     FREE_TEXT = "free_text"      # unstructured text (e.g. description, comment)
-    GEOGRAPHIC = "geographic"    # location data (e.g. country, lat/lon)
 
 
 class NumericStats(BaseModel):
@@ -51,18 +48,22 @@ class ColumnProfile(BaseModel):
 
     def compact(self) -> str:
         """Render a token-efficient one-line summary for LLM context windows."""
+        def _fmt(v: float | None) -> str:
+            return f"{v:.4f}" if v is not None else "N/A"
+
         parts = [f"{self.name} ({self.dtype}, {self.role.value})"]
-        parts.append(f"  nulls={self.null_rate:.1%}  cardinality={self.cardinality}")
+        parts.append(f"nulls={self.null_rate:.1%}  cardinality={self.cardinality}")
         if self.numeric_stats:
             s = self.numeric_stats
             parts.append(
-                f"  range=[{s.min}, {s.max}]  mean={s.mean}  med={s.median}  "
-                f"sd={s.std}  p25={s.p25}  p75={s.p75}  skew={s.skew}"
+                f"range=[{_fmt(s.min)}, {_fmt(s.max)}]  mean={_fmt(s.mean)}  "
+                f"med={_fmt(s.median)}  sd={_fmt(s.std)}  "
+                f"p25={_fmt(s.p25)}  p75={_fmt(s.p75)}  skew={_fmt(s.skew)}"
             )
         if self.categorical_stats:
             top = dict(list(self.categorical_stats.top_values.items())[:5])
-            parts.append(f"  top={top}")
-        return "\n".join(parts)
+            parts.append(f"top={top}")
+        return " - ".join(parts)
 
 
 class DatasetProfile(BaseModel):
