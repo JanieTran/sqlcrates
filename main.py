@@ -1,35 +1,44 @@
 #!/usr/bin/env python3
 import argparse
-
 from config import logger
 from dataset.loader import load_csv, read_metadata
 from dataset.profiler import profile
+from agents.domain_agent import infer_domain
 
 
-def cmd_explore():
-    pass
+def cmd_explore(prof, meta):
+    prof = infer_domain(prof, meta)
+    logger.info(
+        "Domain inference completed\n" \
+        "Domain: %s \nGrain: %s \nDescription: %s\nSeed questions:\n\t%s",
+        prof.domain,
+        prof.grain,
+        prof.description,
+        '\n\t'.join(prof.seed_questions),
+    )
 
 
-def cmd_ask():
-    pass
+def cmd_ask(prof, meta, question):
+    logger.warning("QA agent not yet implemented")
+    print(f"Question: {question}\n(not implemented)")
 
 
-def cmd_chat():
-    pass
+def cmd_chat(prof, meta):
+    logger.warning("Chat mode not yet implemented")
+    print("Chat mode not yet implemented")
 
 
 def main(args):
     df = load_csv(args.csv)
     meta = read_metadata(args.metadata)
     prof = profile(df)
-    logger.info(prof)
-    
+
     if args.command == "explore":
-        cmd_explore()
+        cmd_explore(prof, meta)
     elif args.command == "ask":
-        cmd_ask()
+        cmd_ask(prof, meta, args.question)
     elif args.command == "chat":
-        cmd_chat()
+        cmd_chat(prof, meta)
 
 
 if __name__ == "__main__":
