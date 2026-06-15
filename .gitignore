@@ -19,4 +19,4 @@ venv/
 # Data files
 *.csv
 plan.md
-data_card.md
+data/

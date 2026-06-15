@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 from config import logger
-from dataset.loader import load_csv, read_metadata
-from dataset.profiler import profile
+from ingestion.loader import load_csv, read_metadata
+from ingestion.profiler import profile
 from agents.domain_agent import infer_domain
 
 
