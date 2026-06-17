@@ -1,44 +1,43 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import argparse
+
 from config import logger
-from ingestion.loader import load_csv, read_metadata
-from ingestion.profiler import profile
-from agents.domain_agent import infer_domain
+from ingestion.loader import discover_datasets
+from models.schemas import DatasetProfile
 
 
-def cmd_explore(prof, meta):
-    prof = infer_domain(prof, meta)
-    logger.info(
-        "Domain inference completed\n" \
-        "Domain: %s \nGrain: %s \nDescription: %s\nSeed questions:\n\t%s",
-        prof.domain,
-        prof.grain,
-        prof.description,
-        '\n\t'.join(prof.seed_questions),
-    )
+def cmd_explore(profiles: list[DatasetProfile]):
+    for prof in profiles:
+        logger.info(
+            "Domain inference completed\n"
+            "Dataset: %s\n"
+            "Domain: %s\n"
+            "Grain: %s\n"
+            "Description: %s\n"
+            "Seed questions:\n\t%s",
+            prof.name,
+            prof.domain,
+            prof.grain,
+            prof.description,
+            "\n\t".join(prof.seed_questions),
+        )
 
 
-def cmd_ask(prof, meta, question):
-    logger.warning("QA agent not yet implemented")
-    print(f"Question: {question}\n(not implemented)")
-
-
-def cmd_chat(prof, meta):
+def cmd_chat(prof: DatasetProfile):
     logger.warning("Chat mode not yet implemented")
-    print("Chat mode not yet implemented")
 
 
 def main(args):
-    df = load_csv(args.csv)
-    meta = read_metadata(args.metadata)
-    prof = profile(df)
+    datasets = discover_datasets()
+    if not datasets:
+        return
 
     if args.command == "explore":
-        cmd_explore(prof, meta)
-    elif args.command == "ask":
-        cmd_ask(prof, meta, args.question)
+        cmd_explore(datasets)
     elif args.command == "chat":
-        cmd_chat(prof, meta)
+        cmd_chat(datasets[0])
 
 
 if __name__ == "__main__":
@@ -48,18 +47,8 @@ if __name__ == "__main__":
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p = sub.add_parser("explore", help="Run full autonomous exploration")
-    p.add_argument("csv", help="Path to CSV file")
-    p.add_argument("--metadata", "-m", help="Path to metadata .txt file")
-
-    p = sub.add_parser("ask", help="Answer a single question about the dataset")
-    p.add_argument("csv", help="Path to CSV file")
-    p.add_argument("question", help="Natural language question")
-    p.add_argument("--metadata", "-m", help="Path to metadata .txt file")
-
-    p = sub.add_parser("chat", help="Interactive Q&A session")
-    p.add_argument("csv", help="Path to CSV file")
-    p.add_argument("--metadata", "-m", help="Path to metadata .txt file")
+    sub.add_parser("explore", help="Run full autonomous exploration on all datasets in data/")
+    sub.add_parser("chat", help="Interactive Q&A session with the first dataset in data/")
 
     args = parser.parse_args()
     main(args)

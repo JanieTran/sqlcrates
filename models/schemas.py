@@ -76,6 +76,7 @@ class DatasetProfile(BaseModel):
     This is included in every downstream LLM call to ground the model in the
     dataset's shape, content, and context.
     """
+    name: str = ""                                       # dataset name (stem of the CSV file, e.g. "global_humanoid_robotics")
     row_count: int                                      # total rows in the CSV
     column_count: int                                   # total columns
     columns: list[ColumnProfile]                        # one entry per column, in CSV order
