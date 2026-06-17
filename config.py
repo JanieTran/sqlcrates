@@ -12,7 +12,7 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 # ANSI colour codes — pastel palette
 _RESET = "\033[0m"
-_GREY = "\033[38;2;204;204;204m"     # pastel grey
+_GREY = "\033[2m"                    # pastel grey
 _GREEN = "\033[38;2;166;226;166m"    # pastel green
 _ORANGE = "\033[38;2;255;204;153m"   # pastel orange
 _PURPLE = "\033[38;2;204;153;255m"   # pastel purple

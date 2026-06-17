@@ -4,6 +4,18 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class CollectionInsight(BaseModel):
+    """High-level overview of the combined dataset collection.
+
+    Populated by the domain agent after all datasets have been profiled.
+    """
+    domain: str
+    description: str
+    domain_knowledge: list[str] = Field(default_factory=list)
+    seed_questions: list[str] = Field(default_factory=list)
+    exploration_ideas: list[str] = Field(default_factory=list)
+
+
 class ColumnRole(str, Enum):
     """Semantic role assigned to a column by the profiler.
 
@@ -67,25 +79,22 @@ class ColumnProfile(BaseModel):
 
 
 class DatasetProfile(BaseModel):
-    """Complete profiler output for an entire dataset, enriched by the domain agent.
+    """Per-dataset profile with column-level stats and contextual fields.
 
     Populated in two stages:
     1. Profiler fills row_count, column_count, columns, sample_rows.
-    2. Domain agent fills domain, grain, temporal_coverage, description, seed_questions.
+    2. Domain agent fills grain, temporal_coverage, description.
 
-    This is included in every downstream LLM call to ground the model in the
-    dataset's shape, content, and context.
+    The combined cross-dataset view lives in ``CollectionInsight``.
     """
-    name: str = ""                                       # dataset name (stem of the CSV file, e.g. "global_humanoid_robotics")
+    name: str = ""                                       # dataset name (stem of the CSV file)
     row_count: int                                      # total rows in the CSV
     column_count: int                                   # total columns
     columns: list[ColumnProfile]                        # one entry per column, in CSV order
-    sample_rows: list[dict[str, Any]] = Field(default_factory=list)  # small random sample (≤5 rows) for LLM to see actual data
-    domain: str = ""                                     # e.g. "e-commerce", "healthcare", "finance"  (populated by domain agent)
+    sample_rows: list[dict[str, Any]] = Field(default_factory=list)  # small random sample (≤5 rows)
     grain: str = ""                                      # what one row represents, e.g. "one product per row"
     temporal_coverage: str | None = None                 # date range if datetime columns exist, e.g. "2020-01 – 2024-12"
-    description: str = ""                                # brief text explaining what the dataset is about (populated by domain agent)
-    seed_questions: list[str] = Field(default_factory=list)  # initial questions for the exploration agent
+    description: str = ""                                # brief text explaining what the dataset is about
 
     def compact(self) -> str:
         """Render the entire profile as a compact, LLM-friendly text block."""

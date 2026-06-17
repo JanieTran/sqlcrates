@@ -5,27 +5,39 @@ import argparse
 
 from config import logger
 from ingestion.loader import discover_datasets
-from models.schemas import DatasetProfile
+from agents.domain_agent import infer_collection_insight
+from models.schemas import CollectionInsight, DatasetProfile
 
 
-def cmd_explore(profiles: list[DatasetProfile]):
+def cmd_explore(profiles: list[DatasetProfile], insight: CollectionInsight):
+    logger.info("---DATASET PROFILES")
     for prof in profiles:
         logger.info(
-            "Domain inference completed\n"
             "Dataset: %s\n"
-            "Domain: %s\n"
             "Grain: %s\n"
             "Description: %s\n"
-            "Seed questions:\n\t%s",
+            "Temporal coverage: %s",
             prof.name,
-            prof.domain,
             prof.grain,
             prof.description,
-            "\n\t".join(prof.seed_questions),
+            prof.temporal_coverage,
         )
+    logger.info(
+        "---COLLECTION SUMMARY\n"
+        "- Domain: %s\n"
+        "- Description: %s\n"
+        "- Domain knowledge:\n\t%s\n"
+        "- Seed questions:\n\t%s\n"
+        "- Exploration ideas:\n\t%s",
+        insight.domain,
+        insight.description,
+        "\n\t".join(insight.domain_knowledge),
+        "\n\t".join(insight.seed_questions),
+        "\n\t".join(insight.exploration_ideas),
+    )
 
 
-def cmd_chat(prof: DatasetProfile):
+def cmd_chat(prof: DatasetProfile, insight: CollectionInsight):
     logger.warning("Chat mode not yet implemented")
 
 
@@ -35,9 +47,11 @@ def main(args):
         return
 
     if args.command == "explore":
-        cmd_explore(datasets)
+        insight = infer_collection_insight(datasets)
+        cmd_explore(datasets, insight)
     elif args.command == "chat":
-        cmd_chat(datasets[0])
+        insight = infer_collection_insight(datasets)
+        cmd_chat(datasets[0], insight)
 
 
 if __name__ == "__main__":
