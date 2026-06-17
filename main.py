@@ -6,6 +6,8 @@ import argparse
 from config import logger
 from ingestion.loader import discover_datasets
 from agents.domain_agent import infer_collection_insight
+from agents.sql_agent import generate_sql
+from tools.sql_executor import display_query_results, execute_sql
 from models.schemas import CollectionInsight, DatasetProfile
 
 
@@ -13,10 +15,10 @@ def cmd_explore(profiles: list[DatasetProfile], insight: CollectionInsight):
     logger.info("---DATASET PROFILES")
     for prof in profiles:
         logger.info(
-            "Dataset: %s\n"
-            "Grain: %s\n"
-            "Description: %s\n"
-            "Temporal coverage: %s",
+            "- Dataset: %s\n"
+            "- Grain: %s\n"
+            "- Description: %s\n"
+            "- Temporal coverage: %s",
             prof.name,
             prof.grain,
             prof.description,
@@ -35,6 +37,29 @@ def cmd_explore(profiles: list[DatasetProfile], insight: CollectionInsight):
         "\n\t".join(insight.seed_questions),
         "\n\t".join(insight.exploration_ideas),
     )
+
+    if not insight.seed_questions:
+        return
+
+    logger.info("---TEST SQL GENERATION WITH FIRST SEED QUESTION")
+    q = insight.seed_questions[0]
+
+    logger.info("Question: %s", q)
+    sql_resp = generate_sql(q, profiles, insight)
+    logger.info("Explanation: %s", sql_resp.explanation)
+
+    for i, query in enumerate(sql_resp.queries):
+        logger.info("Executing query %d/%d", i + 1, len(sql_resp.queries))
+        result = execute_sql(query)
+        if result["error"]:
+            logger.error("Query %d failed: %s", i + 1, result["error"])
+        else:
+            logger.info(
+                "Query %d returned %d rows",
+                i + 1,
+                result["row_count"]
+            )
+            display_query_results(result["columns"], result["rows"])
 
 
 def cmd_chat(prof: DatasetProfile, insight: CollectionInsight):

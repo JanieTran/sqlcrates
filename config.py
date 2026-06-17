@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from dataclasses import dataclass, field
 
 # Load environment variables from .env (optional, won't error if file is missing)
-load_dotenv()
+load_dotenv(override=True)
 
 # ---------------------------------------------------------------------------
 # Logger

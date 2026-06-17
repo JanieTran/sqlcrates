@@ -26,3 +26,12 @@ class CollectionResponse(BaseModel):
     exploration_ideas: list[str] = Field(
         description="2-3 ideas for cross-dataset exploration or joining"
     )
+
+
+class SqlGenerationResponse(BaseModel):
+    explanation: str = Field(
+        description="Brief explanation of the SQL approach and what each query does"
+    )
+    queries: list[str] = Field(
+        description="One or more DuckDB SQL queries to answer the question"
+    )
