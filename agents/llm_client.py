@@ -1,8 +1,11 @@
 import json
+import sys
 import time
+
 import requests
 from pydantic import BaseModel
 from typing import Any
+
 from config import logger, settings
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -64,7 +67,35 @@ def call_llm(
 
         except Exception as exc:
             if attempt < max_retries - 1:
-                wait = 2**attempt
+                # Default exponential backoff: 1 s, 2 s, 4 s, …
+                wait = 2 ** attempt
+
+                # OpenRouter returns 429 with an X-RateLimit-Reset header
+                # that gives the epoch timestamp (seconds) when the rate
+                # limit resets.  The exception from raise_for_status()
+                # carries the original response so we can inspect headers.
+                if (
+                    hasattr(exc, "response")
+                    and exc.response is not None
+                    and exc.response.status_code == 429
+                ):
+                    reset_ts = exc.response.headers.get("X-RateLimit-Reset")
+                    if reset_ts is not None:
+                        try:
+                            reset_secs = int(reset_ts) / 1000
+                            wait = int(reset_secs - time.time())
+                        except (ValueError, TypeError):
+                            pass  # fall through to exponential backoff
+
+                        if wait > 180:
+                            from datetime import datetime
+                            readable = datetime.fromtimestamp(reset_secs).strftime("%Y-%m-%d %H:%M:%S")
+                            logger.error(
+                                "Rate limit exceeded, reset at %s",
+                                readable
+                            )
+                            sys.exit(1)
+
                 logger.warning(
                     "LLM call failed (attempt %d/%d): %s — retrying in %ds",
                     attempt + 1,
