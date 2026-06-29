@@ -48,6 +48,12 @@ class CategoricalStats(BaseModel):
     unique_count: int = 0                                     # number of distinct values
 
 
+class CorrelationPair(BaseModel):
+    col1: str
+    col2: str
+    r: float
+
+
 class ColumnProfile(BaseModel):
     """All profiled information for a single column."""
     name: str                                    # column name as it appears in the CSV header
@@ -95,6 +101,7 @@ class DatasetProfile(BaseModel):
     grain: str = ""                                      # what one row represents, e.g. "one product per row"
     temporal_coverage: str | None = None                 # date range if datetime columns exist, e.g. "2020-01 – 2024-12"
     description: str = ""                                # brief text explaining what the dataset is about
+    correlations: list[CorrelationPair] = Field(default_factory=list)
 
     def compact(self) -> str:
         """Render the entire profile as a compact, LLM-friendly text block."""
@@ -105,6 +112,10 @@ class DatasetProfile(BaseModel):
             lines.append("Sample rows:")
             for i, row in enumerate(self.sample_rows[:3]):
                 lines.append(f"  [{i}] {row}")
+        if self.correlations:
+            top = self.correlations[:3]
+            parts = [f"{p.col1} ↔ {p.col2} (r={p.r:.3f})" for p in top]
+            lines.append("Top correlations: " + ", ".join(parts))
         return "\n".join(lines)
 
 

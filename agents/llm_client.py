@@ -23,6 +23,7 @@ def call_llm(
     and a plain dict is returned (same keys as the model fields).
     Retries up to *max_retries* times on HTTP, JSON, or validation errors.
     """
+    logger.info(f"Calling LLM model: {settings.model}")
     headers = {
         "Authorization": f"Bearer {settings.api_key}",
         "Content-Type": "application/json",

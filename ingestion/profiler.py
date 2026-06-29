@@ -123,6 +123,28 @@ def _profile_column(name: str, col: pd.Series, row_count: int) -> ColumnProfile:
     )
 
 
+def _compute_correlations(df: pd.DataFrame) -> list[CorrelationPair]:
+    """Pearson correlation for all numeric column pairs, |r|-sorted descending."""
+    # Select only numeric dtypes — correlation is undefined for text/bool.
+    numeric_df = df.select_dtypes(include=["number"])
+    if numeric_df.shape[1] < 2:
+        return []
+
+    # pandas .corr() returns a square matrix of Pearson r values.  We walk
+    # the upper triangle (i < j) to avoid duplicate pairs and self-pairs.
+    corr = numeric_df.corr()
+    pairs: list[CorrelationPair] = []
+    for i, c1 in enumerate(corr.columns):
+        for c2 in corr.columns[i + 1 :]:
+            r = corr.loc[c1, c2]
+            if not math.isnan(r):
+                pairs.append(CorrelationPair(col1=c1, col2=c2, r=r))
+
+    # Most interesting (strongest relationship) first
+    pairs.sort(key=lambda p: abs(p.r), reverse=True)
+    return pairs[:20]
+
+
 def profile(df: pd.DataFrame) -> DatasetProfile:
     """Profile a DataFrame and return a DatasetProfile with column-level info."""
     row_count = len(df)
@@ -145,9 +167,19 @@ def profile(df: pd.DataFrame) -> DatasetProfile:
         sample_rows=sample_rows,
     )
 
+    # Log a quick summary of detected column roles for user visibility
     role_counts: dict[str, int] = {}
     for c in columns:
         role_counts[c.role.value] = role_counts.get(c.role.value, 0) + 1
     logger.info("Detected roles: %s", role_counts)
+
+    # Cross-column correlations 
+    correlations = _compute_correlations(df)
+    if correlations:
+        profile.correlations = correlations
+        logger.info(
+            "Top correlations: %s",
+            ", ".join(f"{p.col1}↔{p.col2}(r={p.r:.2f})" for p in correlations[:5]),
+        )
 
     return profile
