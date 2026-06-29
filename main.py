@@ -6,37 +6,14 @@ import argparse
 from config import logger
 from ingestion.loader import discover_datasets
 from agents.domain_agent import infer_collection_insight
+from agents.report_agent import write_summary
 from agents.sql_agent import generate_sql
 from tools.sql_executor import display_query_results, execute_sql
 from models.schemas import CollectionInsight, DatasetProfile
 
 
 def cmd_explore(profiles: list[DatasetProfile], insight: CollectionInsight):
-    logger.info("---DATASET PROFILES")
-    for prof in profiles:
-        logger.info(
-            "- Dataset: %s\n"
-            "- Grain: %s\n"
-            "- Description: %s\n"
-            "- Temporal coverage: %s",
-            prof.name,
-            prof.grain,
-            prof.description,
-            prof.temporal_coverage,
-        )
-    logger.info(
-        "---COLLECTION SUMMARY\n"
-        "- Domain: %s\n"
-        "- Description: %s\n"
-        "- Domain knowledge:\n\t%s\n"
-        "- Seed questions:\n\t%s\n"
-        "- Exploration ideas:\n\t%s",
-        insight.domain,
-        insight.description,
-        "\n\t".join(insight.domain_knowledge),
-        "\n\t".join(insight.seed_questions),
-        "\n\t".join(insight.exploration_ideas),
-    )
+    write_summary(profiles, insight)
 
     if not insight.seed_questions:
         return

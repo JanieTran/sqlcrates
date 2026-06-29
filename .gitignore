@@ -16,6 +16,9 @@ dist/
 .venv/
 venv/
 
+# Generated output files
+output/
+
 # Data files
 *.csv
 plan.md

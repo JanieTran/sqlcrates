@@ -16,7 +16,7 @@ def call_llm(
     user_prompt: str,
     response_model: type[BaseModel] | None = None,
     max_retries: int = 3,
-) -> dict[str, Any]:
+) -> dict[str, Any] | str:
     """Call OpenRouter and return the parsed JSON response.
 
     If *response_model* is provided, the response is validated against it
@@ -58,13 +58,11 @@ def call_llm(
                 )
 
             raw = data["choices"][0]["message"]["content"]
-            parsed = json.loads(raw)
-
             if response_model:
+                parsed = json.loads(raw)
                 validated = response_model(**parsed)
                 return validated.model_dump()
-
-            return parsed
+            return raw
 
         except Exception as exc:
             if attempt < max_retries - 1:
