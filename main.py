@@ -4,16 +4,18 @@ from __future__ import annotations
 import argparse
 
 from config import logger
-from ingestion.loader import discover_datasets
+from agents.cache import load_run, save_run
 from agents.domain_agent import infer_collection_insight
 from agents.report_agent import write_summary
 from agents.sql_agent import generate_sql
+from ingestion.loader import discover_datasets, register_tables
 from tools.sql_executor import display_query_results, execute_sql
 from models.schemas import CollectionInsight, DatasetProfile
 
 
 def cmd_explore(profiles: list[DatasetProfile], insight: CollectionInsight):
     write_summary(profiles, insight)
+    exit()
 
     if not insight.seed_questions:
         return
@@ -44,16 +46,23 @@ def cmd_chat(prof: DatasetProfile, insight: CollectionInsight):
 
 
 def main(args):
-    datasets = discover_datasets()
-    if not datasets:
-        return
+    cached = load_run()
+    if cached:
+        datasets, insight = cached
+        if not register_tables():
+            return
+        logger.info("Using cached profiles + insight")
+    else:
+        datasets = discover_datasets()
+        if not datasets:
+            return
+        insight = infer_collection_insight(datasets)
+        save_run(datasets, insight)
 
     if args.command == "explore":
-        insight = infer_collection_insight(datasets)
         cmd_explore(datasets, insight)
     elif args.command == "chat":
-        insight = infer_collection_insight(datasets)
-        cmd_chat(datasets[0], insight)
+        pass
 
 
 if __name__ == "__main__":

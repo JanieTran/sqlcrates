@@ -128,3 +128,14 @@ def discover_datasets(data_dir: str = "data") -> list[DatasetProfile]:
         ", ".join(p.name for p in profiles),
     )
     return profiles
+
+
+def register_tables(data_dir: str = "data") -> bool:
+    """Load CSVs into DuckDB tables without profiling (used when cache is valid)."""
+    root = Path(data_dir)
+    csv_files = sorted(root.glob("*.csv"))
+    if not csv_files:
+        return False
+    for csv_path in csv_files:
+        load_csv(csv_path)
+    return True

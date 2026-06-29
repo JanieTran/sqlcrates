@@ -57,6 +57,12 @@ class Settings:
     max_insights: int = int(os.getenv("MAX_INSIGHTS", "10"))
     # Maximum depth of follow-up questions per thread
     max_follow_up_depth: int = int(os.getenv("MAX_FOLLOW_UP_DEPTH", "2"))
+    # Output directory for generated files (summary, cache, reports)
+    output_dir: str = os.getenv("OUTPUT_DIR", "output")
+    # Cache file path (relative to output_dir)
+    cache_file: str = os.getenv("CACHE_FILE", ".run_cache.json")
+    # Summary report file path (relative to output_dir)
+    summary_file: str = os.getenv("SUMMARY_FILE", "summary.md")
 
 
 settings = Settings()

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from agents.llm_client import call_llm
-from config import logger
+from config import logger, settings
 from models.schemas import CollectionInsight, DatasetProfile
 
 
@@ -19,10 +19,10 @@ _SYSTEM_PROMPT = (
 
 
 def write_summary(profiles: list[DatasetProfile], insight: CollectionInsight) -> Path:
-    """Generate ``output/summary.md`` by asking the LLM to write a narrative summary."""
-    out_dir = Path("output")
+    """Generate a narrative markdown summary via LLM and write to ``settings.summary_file``."""
+    out_dir = Path(settings.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "summary.md"
+    out_path = out_dir / settings.summary_file
 
     # Build the user prompt from profiles + insight
     parts = [
