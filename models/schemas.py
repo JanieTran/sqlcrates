@@ -15,6 +15,20 @@ class CollectionInsight(BaseModel):
     seed_questions: list[str] = Field(default_factory=list)
     exploration_ideas: list[str] = Field(default_factory=list)
 
+    def compact(self) -> str:
+        """Render a token-efficient summary for LLM context windows."""
+        lines = [f"Domain: {self.domain}", f"Description: {self.description}"]
+        if self.domain_knowledge:
+            lines.append("Domain knowledge:")
+            lines.extend(f"- {k}" for k in self.domain_knowledge)
+        if self.seed_questions:
+            lines.append("Seed questions:")
+            lines.extend(f"- {q}" for q in self.seed_questions)
+        if self.exploration_ideas:
+            lines.append("Exploration ideas:")
+            lines.extend(f"- {e}" for e in self.exploration_ideas)
+        return "\n".join(lines)
+
 
 class ColumnRole(str, Enum):
     """Semantic role assigned to a column by the profiler.
@@ -113,9 +127,8 @@ class DatasetProfile(BaseModel):
             for i, row in enumerate(self.sample_rows[:3]):
                 lines.append(f"  [{i}] {row}")
         if self.correlations:
-            top = self.correlations[:3]
-            parts = [f"{p.col1} ↔ {p.col2} (r={p.r:.3f})" for p in top]
-            lines.append("Top correlations: " + ", ".join(parts))
+            corr_strs = [f"{p.col1} ↔ {p.col2} (r={p.r:.3f})" for p in self.correlations]
+            lines.append("Correlations: " + ", ".join(corr_strs))
         return "\n".join(lines)
 
 
@@ -126,3 +139,14 @@ class InsightCard(BaseModel):
     result_summary: str                                     # plain-language summary of what the data says
     interpretation: str                                     # what this finding means in the dataset's context
     follow_ups: list[str] = Field(default_factory=list)     # new questions this insight suggests
+
+    def compact(self) -> str:
+        """Render a token-efficient summary for LLM context windows."""
+        lines = [
+            f"Question: {self.question}",
+            f"Summary: {self.result_summary}",
+            f"Interpretation: {self.interpretation}",
+        ]
+        if self.follow_ups:
+            lines.append("Follow-ups: " + " | ".join(self.follow_ups))
+        return "\n".join(lines)

@@ -7,45 +7,49 @@ from models.schemas import CollectionInsight, DatasetProfile, InsightCard
 
 
 _SYSTEM_PROMPT = (
-    "You are a data journalist. Given a dataset collection profile below, "
-    "write a well-structured markdown summary for a technical audience.\n\n"
+    "You are a data journalist. Given a dataset collection profile and the "
+    "findings from question-answering below, write a well-structured markdown "
+    "summary for a technical audience.\n\n"
     "Cover:\n"
     "- What the collection is about — overall domain and scope\n"
     "- For each dataset: what it contains, its row count, key columns worth "
     "noting, and any interesting correlations between variables\n"
-    "- Notable patterns, caveats, and suggested next steps for analysis\n\n"
+    "- Notable patterns, caveats, and suggested next steps for analysis\n"
+    '- A "Key Questions and Answers" section: for each seed question, present '
+    "the result summary, interpretation, and follow-up questions in a "
+    "structured format\n\n"
     "Use headings, bullet points, and tables where appropriate. "
     "Do NOT wrap the output in a code block — write raw markdown only."
 )
 
 
-def write_summary(profiles: list[DatasetProfile], insight: CollectionInsight) -> Path:
-    """Generate a narrative markdown summary via LLM and write to ``settings.summary_file``."""
+def write_summary(
+    profiles: list[DatasetProfile],
+    insight: CollectionInsight,
+    cards: list[InsightCard] | None = None,
+) -> Path:
+    """Generate a narrative markdown summary via LLM and write to ``settings.summary_file``.
+
+    If *cards* is provided, the QA findings are included in the prompt so the
+    LLM weaves them into the narrative.
+    """
     out_dir = Path(settings.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / settings.summary_file
 
-    # Build the user prompt from profiles + insight
-    parts = [
-        f"# {insight.domain}\n"
-        f"**Collection description:** {insight.description}\n"
-    ]
-    if insight.domain_knowledge:
-        parts.append("**Domain knowledge:**")
-        parts.extend(f"- {item}" for item in insight.domain_knowledge)
-    if insight.exploration_ideas:
-        parts.append("\n**Exploration ideas:**")
-        parts.extend(f"- {idea}" for idea in insight.exploration_ideas)
+    parts = [insight.compact()]
 
     for prof in profiles:
         parts.append(f"\n\n## {prof.name}\n{prof.compact()}")
-        if prof.correlations:
-            corr_strs = [f"- {p.col1} ↔ {p.col2} (r={p.r:.3f})" for p in prof.correlations]
-            parts.append("**Correlations:**\n" + "\n".join(corr_strs))
+
+    if cards:
+        parts.append("\n\n## QA Findings\n")
+        for card in cards:
+            parts.append(f"### {card.question}\n{card.compact()}")
 
     user_prompt = "\n".join(parts)
 
-    logger.info("Generating summary via LLM...")
+    logger.info(f"Generating summary via LLM...\n{user_prompt}")
     result = call_llm(
         system_prompt=_SYSTEM_PROMPT,
         user_prompt=user_prompt,
@@ -98,11 +102,7 @@ def interpret_results(
 
     parts.append(f"# Dataset profiles\n{''.join(p.compact() for p in profiles)}")
 
-    parts.append(
-        f"# Collection context\n"
-        f"Domain: {insight.domain}\n"
-        f"Description: {insight.description}"
-    )
+    parts.append(f"# Collection context\n{insight.compact()}")
 
     user_prompt = "\n\n".join(parts)
     logger.info("Interpreting query results via LLM...")
