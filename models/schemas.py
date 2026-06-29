@@ -122,8 +122,7 @@ class DatasetProfile(BaseModel):
 class InsightCard(BaseModel):
     """A single finding from the exploration or QA agent."""
     question: str                                           # the analytical question being answered
-    answer_method: str                                      # "sql" or "stats" — which tool was used
-    sql_query: str | None = None                            # the SQL query that was executed (None when stats tool used)
+    sql_query: str | None = None                            # the SQL query that was executed
     result_summary: str                                     # plain-language summary of what the data says
     interpretation: str                                     # what this finding means in the dataset's context
     follow_ups: list[str] = Field(default_factory=list)     # new questions this insight suggests

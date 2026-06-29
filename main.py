@@ -6,7 +6,7 @@ import argparse
 from config import logger
 from agents.cache import load_run, save_run
 from agents.domain_agent import infer_collection_insight
-from agents.report_agent import write_summary
+from agents.report_agent import interpret_results, write_summary
 from agents.sql_agent import generate_sql
 from ingestion.loader import discover_datasets, register_tables
 from tools.sql_executor import display_query_results, execute_sql
@@ -15,7 +15,6 @@ from models.schemas import CollectionInsight, DatasetProfile
 
 def cmd_explore(profiles: list[DatasetProfile], insight: CollectionInsight):
     write_summary(profiles, insight)
-    exit()
 
     if not insight.seed_questions:
         return
@@ -27,6 +26,7 @@ def cmd_explore(profiles: list[DatasetProfile], insight: CollectionInsight):
     sql_resp = generate_sql(q, profiles, insight)
     logger.info("Explanation: %s", sql_resp.explanation)
 
+    all_results: list[dict] = []
     for i, query in enumerate(sql_resp.queries):
         logger.info("Executing query %d/%d", i + 1, len(sql_resp.queries))
         result = execute_sql(query)
@@ -39,6 +39,13 @@ def cmd_explore(profiles: list[DatasetProfile], insight: CollectionInsight):
                 result["row_count"]
             )
             display_query_results(result["columns"], result["rows"])
+        all_results.append(result)
+
+    card = interpret_results(q, sql_resp.explanation, all_results, profiles, insight)
+    logger.info("Insight: %s", card.result_summary)
+    logger.info("Interpretation: %s", card.interpretation)
+    if card.follow_ups:
+        logger.info("Follow-ups: %s", " | ".join(card.follow_ups))
 
 
 def cmd_chat(prof: DatasetProfile, insight: CollectionInsight):

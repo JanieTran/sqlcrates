@@ -35,3 +35,16 @@ class SqlGenerationResponse(BaseModel):
     queries: list[str] = Field(
         description="One or more DuckDB SQL queries to answer the question"
     )
+
+
+class InterpretationResponse(BaseModel):
+    result_summary: str = Field(
+        description="Plain-language summary of what the query results show"
+    )
+    interpretation: str = Field(
+        description="What this finding means in the dataset's context"
+    )
+    follow_ups: list[str] = Field(
+        default_factory=list,
+        description="2-3 follow-up questions worth exploring based on this finding",
+    )
